@@ -18,50 +18,61 @@ interface FavoritesState {
   }) => void;
 }
 
-export const useFavoritesStore = create<FavoritesState>((set, get) => ({
-  favorites: [],
-  addFavorite: (character: Character) => {
-    set((state) => {
-      const isAlreadyFavorite = state.favorites.some((fav) => fav.id === character.id);
-      if (isAlreadyFavorite) {
-        return state;
-      }
-      
-      // Llamar callback de notificación si existe
-      if (state.onAddFavorite) {
-        state.onAddFavorite(character);
-      }
-      
-      return {
-        favorites: [character, ...state.favorites]
-      };
-    });
-  },
-  removeFavorite: (characterId: number) => {
-    set((state) => {
-      // Llamar callback de notificación si existe
-      if (state.onRemoveFavorite) {
-        state.onRemoveFavorite(characterId);
-      }
-      
-      return {
-        favorites: state.favorites.filter((fav) => fav.id !== characterId)
-      };
-    });
-  },
-  isFavorite: (characterId: number) => {
-    const { favorites } = get();
-    return favorites.some((fav) => fav.id === characterId);
-  },
-  clearFavorites: () => {
-    set({ favorites: [] });
-  },
-  onAddFavorite: undefined,
-  onRemoveFavorite: undefined,
-  setNotificationCallbacks: (callbacks) => {
-    set({
-      onAddFavorite: callbacks.onAddFavorite,
-      onRemoveFavorite: callbacks.onRemoveFavorite,
-    });
-  },
-})); 
+export const useFavoritesStore = create<FavoritesState>()(
+  persist(
+    (set, get) => ({
+      favorites: [],
+      addFavorite: (character: Character) => {
+        set((state) => {
+          const isAlreadyFavorite = state.favorites.some((fav) => fav.id === character.id);
+          if (isAlreadyFavorite) {
+            return state;
+          }
+          
+          // Llamar callback de notificación si existe
+          if (state.onAddFavorite) {
+            state.onAddFavorite(character);
+          }
+          
+          return {
+            favorites: [character, ...state.favorites]
+          };
+        });
+      },
+      removeFavorite: (characterId: number) => {
+        set((state) => {
+          // Llamar callback de notificación si existe
+          if (state.onRemoveFavorite) {
+            state.onRemoveFavorite(characterId);
+          }
+          
+          return {
+            favorites: state.favorites.filter((fav) => fav.id !== characterId)
+          };
+        });
+      },
+      isFavorite: (characterId: number) => {
+        const { favorites } = get();
+        return favorites.some((fav) => fav.id === characterId);
+      },
+      clearFavorites: () => {
+        set({ favorites: [] });
+      },
+      onAddFavorite: undefined,
+      onRemoveFavorite: undefined,
+      setNotificationCallbacks: (callbacks) => {
+        set({
+          onAddFavorite: callbacks.onAddFavorite,
+          onRemoveFavorite: callbacks.onRemoveFavorite,
+        });
+      },
+    }),
+    {
+      name: 'favorites-storage', // Nombre único para el storage
+      storage: createJSONStorage(() => AsyncStorage), // Usar AsyncStorage
+      partialize: (state) => ({ 
+        favorites: state.favorites 
+      }), // Solo persistir los favoritos, no los callbacks
+    }
+  )
+); 
