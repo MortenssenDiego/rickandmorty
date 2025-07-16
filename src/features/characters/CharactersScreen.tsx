@@ -1,4 +1,4 @@
-import React, { useMemo, useCallback } from 'react';
+import React, { useCallback, useMemo } from 'react';
 import {
   View,
   FlatList,
@@ -22,6 +22,8 @@ import { useOptimizedList } from '../../hooks/useOptimizedList';
 import { Character, NavigationParamList } from '../../types';
 import { theme } from '../../theme';
 import { useThemeStore } from '../../store/themeStore';
+import { Toast } from '../../components/Toast';
+import { useToast } from '../../hooks/useToast';
 
 // Tipo para la navegación de esta pantalla
 type CharactersScreenNavigationProp = NativeStackNavigationProp<NavigationParamList, 'Characters'>;
@@ -53,6 +55,16 @@ export const CharactersScreen: React.FC = () => {
   
   // Hook para optimización de rendimiento de la lista
   const optimizedListConfig = useOptimizedList();
+
+  // Hook para manejar toast
+  const { toast, showError, hideToast } = useToast();
+
+  // Mostrar error en toast cuando hay error
+  React.useEffect(() => {
+    if (error) {
+      showError(error);
+    }
+  }, [error, showError]);
 
   // Función memoizada para navegar al detalle del personaje
   const handleCharacterPress = useCallback((character: Character) => {
@@ -120,38 +132,44 @@ export const CharactersScreen: React.FC = () => {
 
   // Mostrar error si no hay personajes cargados y hay un error
   if (error && characters.length === 0) {
-    return <ErrorView message={error} onRetry={refresh} />;
+    return (
+      <>
+        <ErrorView message={error} onRetry={refresh} />
+        <Toast
+          message={toast.message}
+          type={toast.type}
+          visible={toast.visible}
+          onHide={hideToast}
+        />
+      </>
+    );
   }
 
   return (
     <SafeAreaView style={containerStyle}>
-      {/* Indicador de estado pendiente para transiciones no bloqueantes */}
+      {/* Indicador de estado pendiente para operaciones no bloqueantes */}
       {pendingIndicator}
       
-      {/* Barra de búsqueda con debounce optimizado */}
-      <SearchBar
-        onSearch={searchCharacters}
-        onClear={clearSearch}
-        placeholder="Buscar personajes por nombre..."
-      />
+      {/* Barra de búsqueda */}
+      <SearchBar onSearch={searchCharacters} onClear={clearSearch} placeholder="Buscar personajes por nombre..." />
       
-      {/* Tags de filtros dinámicos */}
-      <FilterTags
-        filterOptions={filterOptions}
+      {/* Tags de filtros */}
+      <FilterTags 
+        filterOptions={filterOptions} 
         appliedFilters={appliedFilters}
         onFilterChange={filterCharacters}
       />
       
-      {/* Lista optimizada de personajes con scroll infinito */}
+      {/* Lista de personajes */}
       <FlatList
         data={characters}
         renderItem={renderItem}
         keyExtractor={optimizedListConfig.keyExtractor}
         contentContainerStyle={listContainerStyle}
-        refreshControl={refreshControl}
         onEndReached={handleLoadMore}
         onEndReachedThreshold={0.1}
         ListFooterComponent={renderFooter}
+        refreshControl={refreshControl}
         showsVerticalScrollIndicator={false}
         // Configuraciones de optimización para mejor rendimiento
         removeClippedSubviews={optimizedListConfig.removeClippedSubviews}
@@ -160,6 +178,14 @@ export const CharactersScreen: React.FC = () => {
         initialNumToRender={optimizedListConfig.initialNumToRender}
         getItemLayout={optimizedListConfig.getItemLayout}
         updateCellsBatchingPeriod={optimizedListConfig.updateCellsBatchingPeriod}
+      />
+
+      {/* Toast para mostrar errores */}
+      <Toast
+        message={toast.message}
+        type={toast.type}
+        visible={toast.visible}
+        onHide={hideToast}
       />
     </SafeAreaView>
   );

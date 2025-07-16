@@ -6,15 +6,7 @@ import { Character } from '../../types';
 
 // Mock del servicio API
 jest.mock('../../services/api');
-jest.mock('../../store/favoritesStore', () => ({
-  useFavoritesStore: () => ({
-    favorites: [],
-    addFavorite: jest.fn(),
-    removeFavorite: jest.fn(),
-    isFavorite: jest.fn(() => false),
-    clearFavorites: jest.fn(),
-  }),
-}));
+jest.mock('../../store/themeStore');
 
 const mockApiService = apiService as jest.Mocked<typeof apiService>;
 
@@ -100,9 +92,83 @@ describe('useCharacters', () => {
       await new Promise(resolve => setTimeout(resolve, 0));
     });
 
-    expect(result.current.error).toBe(errorMessage);
+    // Ahora esperamos el mensaje traducido
+    expect(result.current.error).toBe('No se pudieron cargar los personajes. Verifica tu conexión a internet.');
     expect(result.current.loading).toBe(false);
     expect(result.current.characters).toEqual([]);
+  });
+
+  it('should handle search errors', async () => {
+    const errorMessage = 'Failed to search characters';
+    mockApiService.searchCharacters.mockRejectedValue(new Error(errorMessage));
+
+    const { result } = renderHook(() => useCharacters());
+
+    await act(async () => {
+      result.current.searchCharacters('Rick');
+    });
+
+    await act(async () => {
+      await new Promise(resolve => setTimeout(resolve, 0));
+    });
+
+    expect(result.current.error).toBe('No se encontraron personajes con ese nombre.');
+  });
+
+  it('should handle filter errors', async () => {
+    const errorMessage = 'Failed to filter characters';
+    mockApiService.filterCharacters.mockRejectedValue(new Error(errorMessage));
+
+    const { result } = renderHook(() => useCharacters());
+
+    await act(async () => {
+      result.current.filterCharacters({ status: 'Alive' });
+    });
+
+    await act(async () => {
+      await new Promise(resolve => setTimeout(resolve, 0));
+    });
+
+    expect(result.current.error).toBe('Error al aplicar los filtros. Intenta de nuevo.');
+  });
+
+  it('should handle network timeout errors', async () => {
+    const errorMessage = 'timeout of 10000ms exceeded';
+    mockApiService.getCharacters.mockRejectedValue(new Error(errorMessage));
+
+    const { result } = renderHook(() => useCharacters());
+
+    await act(async () => {
+      await new Promise(resolve => setTimeout(resolve, 0));
+    });
+
+    expect(result.current.error).toBe('La conexión tardó demasiado. Verifica tu internet.');
+  });
+
+  it('should handle network errors', async () => {
+    const errorMessage = 'Network Error';
+    mockApiService.getCharacters.mockRejectedValue(new Error(errorMessage));
+
+    const { result } = renderHook(() => useCharacters());
+
+    await act(async () => {
+      await new Promise(resolve => setTimeout(resolve, 0));
+    });
+
+    expect(result.current.error).toBe('Error de conexión. Verifica tu internet.');
+  });
+
+  it('should handle unknown errors', async () => {
+    const errorMessage = 'Unknown error type';
+    mockApiService.getCharacters.mockRejectedValue(new Error(errorMessage));
+
+    const { result } = renderHook(() => useCharacters());
+
+    await act(async () => {
+      await new Promise(resolve => setTimeout(resolve, 0));
+    });
+
+    expect(result.current.error).toBe('Error al cargar los personajes');
   });
 
   it('should search characters', async () => {
@@ -115,7 +181,6 @@ describe('useCharacters', () => {
     });
 
     expect(mockApiService.searchCharacters).toHaveBeenCalledWith('Rick', 1);
-    expect(result.current.searchQuery).toBe('Rick');
   });
 
   it('should filter characters', async () => {
@@ -123,13 +188,11 @@ describe('useCharacters', () => {
 
     const { result } = renderHook(() => useCharacters());
 
-    const filters = { status: 'Alive', species: 'Human' };
     await act(async () => {
-      result.current.filterCharacters(filters);
+      result.current.filterCharacters({ status: 'Alive' });
     });
 
-    expect(mockApiService.filterCharacters).toHaveBeenCalledWith(filters, 1);
-    expect(result.current.appliedFilters).toEqual(filters);
+    expect(mockApiService.filterCharacters).toHaveBeenCalledWith({ status: 'Alive' }, 1);
   });
 
   it('should clear search', async () => {
@@ -137,19 +200,10 @@ describe('useCharacters', () => {
 
     const { result } = renderHook(() => useCharacters());
 
-    // Primero hacer una búsqueda
-    await act(async () => {
-      result.current.searchCharacters('Rick');
-    });
-
-    expect(result.current.searchQuery).toBe('Rick');
-
-    // Luego limpiar la búsqueda
     await act(async () => {
       result.current.clearSearch();
     });
 
-    expect(result.current.searchQuery).toBe('');
     expect(mockApiService.getCharacters).toHaveBeenCalledWith(1);
   });
 

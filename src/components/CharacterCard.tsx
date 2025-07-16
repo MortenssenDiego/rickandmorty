@@ -11,6 +11,7 @@ import { Character } from '../types';
 import { theme } from '../theme';
 import { useThemeStore } from '../store/themeStore';
 import { useImageOptimization } from '../hooks/useImageOptimization';
+import { translateStatus } from '../utils/statusTranslator';
 
 interface CharacterCardProps {
   character: Character;
@@ -47,6 +48,9 @@ export const CharacterCard: React.FC<CharacterCardProps> = React.memo(({ charact
     [getOptimizedImageSource, character.image]
   );
 
+  // Traducir el estado del personaje
+  const translatedStatus = useMemo(() => translateStatus(character.status), [character.status]);
+
   return (
     <TouchableOpacity
       style={[
@@ -64,7 +68,7 @@ export const CharacterCard: React.FC<CharacterCardProps> = React.memo(({ charact
         <View style={styles.statusContainer}>
           <View style={[styles.statusDot, { backgroundColor: statusColor }]} />
           <Text style={[styles.status, { color: colors.textSecondary }]}>
-            {character.status} - {character.species}
+            {translatedStatus} - {character.species}
           </Text>
         </View>
       </View>

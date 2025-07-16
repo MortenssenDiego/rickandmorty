@@ -71,6 +71,9 @@ describe('CharacterDetailScreen', () => {
       removeFavorite: jest.fn(),
       isFavorite: jest.fn(() => false),
       clearFavorites: jest.fn(),
+      setNotificationCallbacks: jest.fn(),
+      onAddFavorite: undefined,
+      onRemoveFavorite: undefined,
     });
 
     mockUseThemeStore.mockReturnValue({
@@ -88,9 +91,9 @@ describe('CharacterDetailScreen', () => {
     render(<TestWrapper character={mockCharacter} />);
 
     expect(screen.getByText('Rick Sanchez')).toBeOnTheScreen();
-    expect(screen.getByText('Alive')).toBeOnTheScreen();
+    expect(screen.getByText('Vivo')).toBeOnTheScreen(); // Estado traducido
     expect(screen.getByText('Human')).toBeOnTheScreen();
-    expect(screen.getByText('Male')).toBeOnTheScreen();
+    expect(screen.getByText('Masculino')).toBeOnTheScreen(); // Género traducido
     expect(screen.getByText('Earth (C-137)')).toBeOnTheScreen();
     expect(screen.getByText('Citadel of Ricks')).toBeOnTheScreen();
   });
@@ -102,12 +105,15 @@ describe('CharacterDetailScreen', () => {
       removeFavorite: jest.fn(),
       isFavorite: jest.fn(() => false),
       clearFavorites: jest.fn(),
+      setNotificationCallbacks: jest.fn(),
+      onAddFavorite: undefined,
+      onRemoveFavorite: undefined,
     });
 
     render(<TestWrapper character={mockCharacter} />);
 
-    // Verificar que el botón de favorito está presente (sin testID específico)
-    expect(screen.getByText('Rick Sanchez')).toBeOnTheScreen();
+    // Verificar que el botón de favorito está presente con testID
+    expect(screen.getByTestId('favorite-button')).toBeOnTheScreen();
   });
 
   it('should show favorite button when character is in favorites', () => {
@@ -117,12 +123,15 @@ describe('CharacterDetailScreen', () => {
       removeFavorite: jest.fn(),
       isFavorite: jest.fn(() => true),
       clearFavorites: jest.fn(),
+      setNotificationCallbacks: jest.fn(),
+      onAddFavorite: undefined,
+      onRemoveFavorite: undefined,
     });
 
     render(<TestWrapper character={mockCharacter} />);
 
-    // Verificar que el botón de favorito está presente (sin testID específico)
-    expect(screen.getByText('Rick Sanchez')).toBeOnTheScreen();
+    // Verificar que el botón de favorito está presente con testID
+    expect(screen.getByTestId('favorite-button')).toBeOnTheScreen();
   });
 
   it('should call addFavorite when favorite button is pressed', async () => {
@@ -133,16 +142,23 @@ describe('CharacterDetailScreen', () => {
       removeFavorite: jest.fn(),
       isFavorite: jest.fn(() => false),
       clearFavorites: jest.fn(),
+      setNotificationCallbacks: jest.fn(),
+      onAddFavorite: undefined,
+      onRemoveFavorite: undefined,
     });
 
     const user = userEvent.setup();
     render(<TestWrapper character={mockCharacter} />);
 
-    // Como no hay testID específico, verificamos que el componente se renderiza correctamente
-    expect(screen.getByText('Rick Sanchez')).toBeOnTheScreen();
+    // Presionar el botón de favoritos usando testID
+    const favoriteButton = screen.getByTestId('favorite-button');
+    await user.press(favoriteButton);
+
+    // Verificar que se llamó la función addFavorite
+    expect(mockAddFavorite).toHaveBeenCalledWith(mockCharacter);
   });
 
-  it('should call removeFavorite when favorite button is pressed', async () => {
+  it('should call removeFavorite when favorite button is pressed and character is already favorite', async () => {
     const mockRemoveFavorite = jest.fn();
     mockUseFavoritesStore.mockReturnValue({
       favorites: [mockCharacter],
@@ -150,44 +166,20 @@ describe('CharacterDetailScreen', () => {
       removeFavorite: mockRemoveFavorite,
       isFavorite: jest.fn(() => true),
       clearFavorites: jest.fn(),
+      setNotificationCallbacks: jest.fn(),
+      onAddFavorite: undefined,
+      onRemoveFavorite: undefined,
     });
 
     const user = userEvent.setup();
     render(<TestWrapper character={mockCharacter} />);
 
-    // Como no hay testID específico, verificamos que el componente se renderiza correctamente
-    expect(screen.getByText('Rick Sanchez')).toBeOnTheScreen();
-  });
+    // Presionar el botón de favoritos usando testID
+    const favoriteButton = screen.getByTestId('favorite-button');
+    await user.press(favoriteButton);
 
-  it('should update button state after adding to favorites', async () => {
-    const mockAddFavorite = jest.fn();
-    let isFavorite = false;
-    
-    mockUseFavoritesStore.mockReturnValue({
-      favorites: [],
-      addFavorite: mockAddFavorite,
-      removeFavorite: jest.fn(),
-      isFavorite: jest.fn(() => isFavorite),
-      clearFavorites: jest.fn(),
-    });
-
-    const { rerender } = render(<TestWrapper character={mockCharacter} />);
-
-    expect(screen.getByText('Rick Sanchez')).toBeOnTheScreen();
-
-    // Simular que se agregó a favoritos
-    isFavorite = true;
-    mockUseFavoritesStore.mockReturnValue({
-      favorites: [mockCharacter],
-      addFavorite: mockAddFavorite,
-      removeFavorite: jest.fn(),
-      isFavorite: jest.fn(() => isFavorite),
-      clearFavorites: jest.fn(),
-    });
-
-    rerender(<TestWrapper character={mockCharacter} />);
-
-    expect(screen.getByText('Rick Sanchez')).toBeOnTheScreen();
+    // Verificar que se llamó la función removeFavorite
+    expect(mockRemoveFavorite).toHaveBeenCalledWith(mockCharacter.id);
   });
 
   it('should show episode count correctly', () => {
@@ -215,7 +207,8 @@ describe('CharacterDetailScreen', () => {
 
     render(<TestWrapper character={characterWithUnknownStatus} />);
 
-    expect(screen.getByText('unknown')).toBeOnTheScreen();
+    // Verificar que hay al menos un elemento con "Desconocido" (puede ser estado o género)
+    expect(screen.getAllByText('Desconocido').length).toBeGreaterThan(0);
   });
 
   it('should handle character with no type', () => {
@@ -239,5 +232,39 @@ describe('CharacterDetailScreen', () => {
     render(<TestWrapper character={characterWithType} />);
 
     expect(screen.getByText('Test Type')).toBeOnTheScreen();
+  });
+
+  it('should handle character with unknown gender', () => {
+    const characterWithUnknownGender = {
+      ...mockCharacter,
+      gender: 'unknown' as const,
+    };
+
+    render(<TestWrapper character={characterWithUnknownGender} />);
+
+    // Verificar que hay al menos un elemento con "Desconocido" (puede ser estado o género)
+    expect(screen.getAllByText('Desconocido').length).toBeGreaterThan(0);
+  });
+
+  it('should handle character with genderless gender', () => {
+    const characterWithGenderless = {
+      ...mockCharacter,
+      gender: 'Genderless' as const,
+    };
+
+    render(<TestWrapper character={characterWithGenderless} />);
+
+    expect(screen.getByText('Sin género')).toBeOnTheScreen(); // Género traducido
+  });
+
+  it('should handle character with dead status', () => {
+    const characterWithDeadStatus = {
+      ...mockCharacter,
+      status: 'Dead' as const,
+    };
+
+    render(<TestWrapper character={characterWithDeadStatus} />);
+
+    expect(screen.getByText('Muerto')).toBeOnTheScreen(); // Estado traducido
   });
 }); 

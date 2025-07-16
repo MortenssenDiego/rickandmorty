@@ -93,6 +93,9 @@ describe('FavoritesScreen Integration Tests', () => {
       removeFavorite: jest.fn(),
       isFavorite: jest.fn(() => false),
       clearFavorites: jest.fn(),
+      setNotificationCallbacks: jest.fn(),
+      onAddFavorite: undefined,
+      onRemoveFavorite: undefined,
     });
 
     mockUseThemeStore.mockReturnValue({
@@ -121,6 +124,9 @@ describe('FavoritesScreen Integration Tests', () => {
       removeFavorite: jest.fn(),
       isFavorite: jest.fn(() => true),
       clearFavorites: jest.fn(),
+      setNotificationCallbacks: jest.fn(),
+      onAddFavorite: undefined,
+      onRemoveFavorite: undefined,
     });
 
     render(<TestWrapper><FavoritesScreen /></TestWrapper>);
@@ -128,8 +134,8 @@ describe('FavoritesScreen Integration Tests', () => {
     // Verificar que se muestran los personajes favoritos
     expect(screen.getByText('Rick Sanchez')).toBeTruthy();
     expect(screen.getByText('Morty Smith')).toBeTruthy();
-    // Usar getAllByText porque hay múltiples elementos con el mismo texto
-    expect(screen.getAllByText('Alive - Human')).toHaveLength(2);
+    // Verificar que se muestran los estados traducidos
+    expect(screen.getAllByText('Vivo - Human')).toHaveLength(2); // Estado traducido
   });
 
   test('should handle character press and navigate to detail', async () => {
@@ -139,6 +145,9 @@ describe('FavoritesScreen Integration Tests', () => {
       removeFavorite: jest.fn(),
       isFavorite: jest.fn(() => true),
       clearFavorites: jest.fn(),
+      setNotificationCallbacks: jest.fn(),
+      onAddFavorite: undefined,
+      onRemoveFavorite: undefined,
     });
 
     render(<TestWrapper><FavoritesScreen /></TestWrapper>);
@@ -160,6 +169,9 @@ describe('FavoritesScreen Integration Tests', () => {
       removeFavorite: jest.fn(),
       isFavorite: jest.fn(() => true),
       clearFavorites: jest.fn(),
+      setNotificationCallbacks: jest.fn(),
+      onAddFavorite: undefined,
+      onRemoveFavorite: undefined,
     });
 
     render(<TestWrapper><FavoritesScreen /></TestWrapper>);
@@ -183,6 +195,9 @@ describe('FavoritesScreen Integration Tests', () => {
       removeFavorite: jest.fn(),
       isFavorite: jest.fn(() => true),
       clearFavorites: jest.fn(),
+      setNotificationCallbacks: jest.fn(),
+      onAddFavorite: undefined,
+      onRemoveFavorite: undefined,
     });
 
     render(<TestWrapper><FavoritesScreen /></TestWrapper>);
@@ -198,6 +213,9 @@ describe('FavoritesScreen Integration Tests', () => {
       removeFavorite: jest.fn(),
       isFavorite: jest.fn(() => true),
       clearFavorites: jest.fn(),
+      setNotificationCallbacks: jest.fn(),
+      onAddFavorite: undefined,
+      onRemoveFavorite: undefined,
     });
 
     render(<TestWrapper><FavoritesScreen /></TestWrapper>);
@@ -214,6 +232,9 @@ describe('FavoritesScreen Integration Tests', () => {
       removeFavorite: mockRemoveFavorite,
       isFavorite: jest.fn(() => true),
       clearFavorites: jest.fn(),
+      setNotificationCallbacks: jest.fn(),
+      onAddFavorite: undefined,
+      onRemoveFavorite: undefined,
     });
 
     render(<TestWrapper><FavoritesScreen /></TestWrapper>);
@@ -233,6 +254,9 @@ describe('FavoritesScreen Integration Tests', () => {
       removeFavorite: jest.fn(),
       isFavorite: jest.fn(() => true),
       clearFavorites: jest.fn(),
+      setNotificationCallbacks: jest.fn(),
+      onAddFavorite: undefined,
+      onRemoveFavorite: undefined,
     });
 
     render(<TestWrapper><FavoritesScreen /></TestWrapper>);

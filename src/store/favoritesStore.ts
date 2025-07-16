@@ -9,6 +9,13 @@ interface FavoritesState {
   removeFavorite: (characterId: number) => void;
   isFavorite: (characterId: number) => boolean;
   clearFavorites: () => void;
+  // Callbacks para notificaciones
+  onAddFavorite?: (character: Character) => void;
+  onRemoveFavorite?: (characterId: number) => void;
+  setNotificationCallbacks: (callbacks: {
+    onAddFavorite?: (character: Character) => void;
+    onRemoveFavorite?: (characterId: number) => void;
+  }) => void;
 }
 
 export const useFavoritesStore = create<FavoritesState>((set, get) => ({
@@ -19,15 +26,28 @@ export const useFavoritesStore = create<FavoritesState>((set, get) => ({
       if (isAlreadyFavorite) {
         return state;
       }
+      
+      // Llamar callback de notificación si existe
+      if (state.onAddFavorite) {
+        state.onAddFavorite(character);
+      }
+      
       return {
         favorites: [character, ...state.favorites]
       };
     });
   },
   removeFavorite: (characterId: number) => {
-    set((state) => ({
-      favorites: state.favorites.filter((fav) => fav.id !== characterId)
-    }));
+    set((state) => {
+      // Llamar callback de notificación si existe
+      if (state.onRemoveFavorite) {
+        state.onRemoveFavorite(characterId);
+      }
+      
+      return {
+        favorites: state.favorites.filter((fav) => fav.id !== characterId)
+      };
+    });
   },
   isFavorite: (characterId: number) => {
     const { favorites } = get();
@@ -35,5 +55,13 @@ export const useFavoritesStore = create<FavoritesState>((set, get) => ({
   },
   clearFavorites: () => {
     set({ favorites: [] });
+  },
+  onAddFavorite: undefined,
+  onRemoveFavorite: undefined,
+  setNotificationCallbacks: (callbacks) => {
+    set({
+      onAddFavorite: callbacks.onAddFavorite,
+      onRemoveFavorite: callbacks.onRemoveFavorite,
+    });
   },
 })); 

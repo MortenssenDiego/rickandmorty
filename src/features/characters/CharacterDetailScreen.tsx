@@ -1,4 +1,4 @@
-import React, { useMemo, useCallback } from 'react';
+import React, { useMemo, useCallback, useEffect } from 'react';
 import {
   View,
   Text,
@@ -16,6 +16,9 @@ import { NavigationParamList } from '../../types';
 import { theme } from '../../theme';
 import { useThemeStore } from '../../store/themeStore';
 import { useFavoritesStore } from '../../store/favoritesStore';
+import { translateStatus, translateGender } from '../../utils/statusTranslator';
+import { useToast } from '../../hooks/useToast';
+import { Toast } from '../../components/Toast';
 
 // Tipos para la navegación y parámetros de ruta
 type CharacterDetailRouteProp = RouteProp<NavigationParamList, 'CharacterDetail'>;
@@ -33,8 +36,28 @@ export const CharacterDetailScreen: React.FC = () => {
   
   // Hook del store de favoritos para gestionar el estado global
   // @ts-ignore
-  const { favorites, addFavorite, removeFavorite, isFavorite } = useFavoritesStore();
+  const { favorites, addFavorite, removeFavorite, isFavorite, setNotificationCallbacks } = useFavoritesStore();
   const isCharacterFavorite = isFavorite(character.id);
+
+  // Hook para manejar toast
+  const { toast, showSuccess, showInfo, hideToast } = useToast();
+
+  // Configurar callbacks de notificación
+  useEffect(() => {
+    setNotificationCallbacks({
+      onAddFavorite: (character) => {
+        showSuccess(`${character.name} agregado a favoritos`);
+      },
+      onRemoveFavorite: (characterId) => {
+        showInfo('Personaje removido de favoritos');
+      },
+    });
+
+    // Cleanup al desmontar
+    return () => {
+      setNotificationCallbacks({});
+    };
+  }, [setNotificationCallbacks, showSuccess, showInfo]);
 
   // Función memoizada para agregar/quitar de favoritos
   const handleToggleFavorite = useCallback(() => {
@@ -64,7 +87,7 @@ export const CharacterDetailScreen: React.FC = () => {
   const infoRows = useMemo(() => [
     {
       label: 'Estado:',
-      value: character.status,
+      value: translateStatus(character.status),
       isStatus: true, // Indica que debe mostrar el punto de color
     },
     {
@@ -77,7 +100,7 @@ export const CharacterDetailScreen: React.FC = () => {
     },
     {
       label: 'Género:',
-      value: character.gender,
+      value: translateGender(character.gender),
     },
     {
       label: 'Origen:',
@@ -114,6 +137,8 @@ export const CharacterDetailScreen: React.FC = () => {
                 },
               ]}
               onPress={handleToggleFavorite}
+              testID="favorite-button"
+              accessibilityLabel={isCharacterFavorite ? "Quitar de favoritos" : "Agregar a favoritos"}
             >
               <MaterialCommunityIcons 
                 name={isCharacterFavorite ? 'heart' : 'heart-outline'} 
@@ -143,6 +168,14 @@ export const CharacterDetailScreen: React.FC = () => {
           </View>
         </View>
       </ScrollView>
+
+      {/* Toast para mostrar notificaciones */}
+      <Toast
+        message={toast.message}
+        type={toast.type}
+        visible={toast.visible}
+        onHide={hideToast}
+      />
     </SafeAreaView>
   );
 };

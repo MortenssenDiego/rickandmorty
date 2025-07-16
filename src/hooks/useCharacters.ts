@@ -33,7 +33,11 @@ export const useCharacters = (): UseCharactersReturn => {
   const [isPending, startTransition] = useTransition();
 
   // Función principal para obtener personajes de la API
-  const fetchCharacters = useCallback(async (pageNum: number, append: boolean = false, filters?: AppliedFilters) => {
+  const fetchCharacters = useCallback(async (
+    pageNum: number = 1, 
+    append: boolean = false, 
+    filters?: AppliedFilters
+  ) => {
     try {
       setLoading(true);
       setError(null);
@@ -72,7 +76,25 @@ export const useCharacters = (): UseCharactersReturn => {
       // Actualizar si hay más páginas disponibles
       setHasMore(!!response.info.next);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'An error occurred');
+      const errorMessage = err instanceof Error ? err.message : 'Error desconocido';
+      setError(errorMessage);
+      
+      // Mostrar mensaje de error más amigable
+      let userFriendlyMessage = 'Error al cargar los personajes';
+      
+      if (errorMessage.includes('Failed to fetch characters')) {
+        userFriendlyMessage = 'No se pudieron cargar los personajes. Verifica tu conexión a internet.';
+      } else if (errorMessage.includes('Failed to search characters')) {
+        userFriendlyMessage = 'No se encontraron personajes con ese nombre.';
+      } else if (errorMessage.includes('Failed to filter characters')) {
+        userFriendlyMessage = 'Error al aplicar los filtros. Intenta de nuevo.';
+      } else if (errorMessage.includes('timeout')) {
+        userFriendlyMessage = 'La conexión tardó demasiado. Verifica tu internet.';
+      } else if (errorMessage.includes('Network Error')) {
+        userFriendlyMessage = 'Error de conexión. Verifica tu internet.';
+      }
+      
+      setError(userFriendlyMessage);
     } finally {
       setLoading(false);
     }

@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, screen, userEvent, waitFor } from '@testing-library/react-native';
+import { render, screen, userEvent } from '@testing-library/react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { CharactersScreen } from '../CharactersScreen';
@@ -8,15 +8,13 @@ import { useCharacters } from '../../../hooks/useCharacters';
 import { useFilterOptions } from '../../../hooks/useFilterOptions';
 import { useFavoritesStore } from '../../../store/favoritesStore';
 import { Character } from '../../../types';
-import { apiService } from '../../../services/api';
+import { useThemeStore } from '../../../store/themeStore';
 
 // Mock de los hooks
 jest.mock('../../../hooks/useCharacters');
 jest.mock('../../../hooks/useFilterOptions');
 jest.mock('../../../store/favoritesStore');
-jest.mock('../../../store/themeStore', () => ({
-  useThemeStore: () => ({ isDarkMode: false }),
-}));
+jest.mock('../../../store/themeStore');
 
 // Mock de react-native-vector-icons
 jest.mock('react-native-vector-icons/MaterialCommunityIcons', () => 'Icon');
@@ -91,6 +89,7 @@ describe('CharactersScreen', () => {
   const mockUseCharacters = useCharacters as jest.MockedFunction<typeof useCharacters>;
   const mockUseFilterOptions = useFilterOptions as jest.MockedFunction<typeof useFilterOptions>;
   const mockUseFavoritesStore = useFavoritesStore as jest.MockedFunction<typeof useFavoritesStore>;
+  const mockUseThemeStore = useThemeStore as jest.MockedFunction<typeof useThemeStore>;
 
   beforeEach(() => {
     // Configuración por defecto de los mocks
@@ -109,6 +108,12 @@ describe('CharactersScreen', () => {
       searchQuery: '',
     });
 
+    mockUseThemeStore.mockReturnValue({
+      isDarkMode: false,
+      toggleTheme: jest.fn(),
+      setTheme: jest.fn(),
+    });
+
     mockUseFilterOptions.mockReturnValue({
       filterOptions: {
         status: ['Alive', 'Dead', 'unknown'],
@@ -125,6 +130,9 @@ describe('CharactersScreen', () => {
       removeFavorite: jest.fn(),
       isFavorite: jest.fn(() => false),
       clearFavorites: jest.fn(),
+      setNotificationCallbacks: jest.fn(),
+      onAddFavorite: undefined,
+      onRemoveFavorite: undefined,
     });
   });
 
@@ -137,8 +145,8 @@ describe('CharactersScreen', () => {
 
     expect(screen.getByText('Rick Sanchez')).toBeOnTheScreen();
     expect(screen.getByText('Morty Smith')).toBeOnTheScreen();
-    // Usar getAllByText porque hay múltiples elementos con el mismo texto
-    expect(screen.getAllByText('Alive - Human')).toHaveLength(2);
+    // Verificar que se muestran los estados traducidos
+    expect(screen.getAllByText('Vivo - Human')).toHaveLength(2); // Estado traducido
   });
 
   it('should handle character press and navigate to detail', async () => {
@@ -209,8 +217,8 @@ describe('CharactersScreen', () => {
 
     render(<TestWrapper><CharactersScreen /></TestWrapper>);
 
-    // Verificar que se muestra el mensaje de error
-    expect(screen.getByText('Error al cargar personajes')).toBeTruthy();
+    // Verificar que se muestra el mensaje de error (puede aparecer en ErrorView y Toast)
+    expect(screen.getAllByText('Error al cargar personajes').length).toBeGreaterThan(0);
   });
 
   it('should handle pull to refresh', async () => {
@@ -240,5 +248,32 @@ describe('CharactersScreen', () => {
 
     // Verificar que NO hay FlatList con testID (no implementado)
     expect(screen.queryByTestId('characters-flatlist')).toBeNull();
+  });
+
+  it('should show characters with different statuses translated correctly', () => {
+    const characterWithDeadStatus: Character = {
+      ...mockCharacter,
+      id: 3,
+      name: 'Dead Character',
+      status: 'Dead',
+    };
+
+    const characterWithUnknownStatus: Character = {
+      ...mockCharacter,
+      id: 4,
+      name: 'Unknown Character',
+      status: 'unknown',
+    };
+
+    mockUseCharacters.mockReturnValue({
+      ...mockUseCharacters(),
+      characters: [characterWithDeadStatus, characterWithUnknownStatus],
+    });
+
+    render(<TestWrapper><CharactersScreen /></TestWrapper>);
+
+    // Verificar que se muestran los estados traducidos
+    expect(screen.getByText('Muerto - Human')).toBeOnTheScreen(); // Estado traducido
+    expect(screen.getByText('Desconocido - Human')).toBeOnTheScreen(); // Estado traducido
   });
 }); 
